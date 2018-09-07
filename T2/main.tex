@@ -1,0 +1,450 @@
+\documentclass[submit]{harvardml}
+
+% Put in your full name and email address.
+\name{Melissa Yu}
+\email{melissayu@college.harvard.edu}
+
+% List any people you worked with.
+\collaborators{%
+  Alex Lin
+}
+
+% You don't need to change these.
+\course{CS281-F17}
+\assignment{Assignment \#2 v 1.1}
+\duedate{5:00pm October 9, 2017}
+
+\usepackage{url, enumitem}
+\usepackage{amsfonts}
+\usepackage{listings}
+\usepackage{bm}
+
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subcaption}
+\graphicspath{ {img/} }
+\usepackage{epstopdf} % eps to pdf, declare graphics
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{bayesnet}
+% Some useful macros.
+\newcommand{\given}{\,|\,}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\var}{\text{var}}
+\newcommand{\cov}{\text{cov}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\ep}{\varepsilon}
+
+\newcommand{\Dir}{\text{Dirichlet}}
+\newcommand{\Bet}{\text{Beta}}
+\newcommand{\Ber}{\text{Bernoulli}}
+% Useful macros.
+\newcommand{\trans}{\mathsf{T}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\by}{\mathbf{y}}
+\newcommand{\bw}{\mathbf{w}}
+\newcommand{\distNorm}{\mathcal{N}}
+\newcommand{\bzero}{\mathbf{0}}
+\newcommand{\ident}{\mathbb{I}}
+\renewcommand{\v}[1]{\mathbf{#1}}
+
+\begin{document}
+
+
+\noindent \textbf{NOTE:} you must show derivations for your answers unless a question explicitly mentions that no justification is required.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%% PROBLEM 1 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{problems_Gaussian.tex}
+
+\begin{enumerate}
+	\item We have $\bx = \langle x_1, \dots, x_D \rangle$, where the $x_i$ are i.i.d. and distributed $\distNorm(0, 1)$ by the properties of MVN's. We wish to find the distribution of
+	\[Y = \sqrt{\bx^\trans\bx} = \sqrt{\sum_{i=1}^D x_i^2}\]
+	As described in Murphy 2.4.4, the sum of squared standard normals $S = \sum_{i=1}^D x_i^2$ follows the chi-squared distribution $\chi_D^2$. Taking the square root with the change of variables formula, $\sqrt{S}$ has the pdf
+	\[
+	f_Y(y) 
+	= 2y f_S(y^2)
+	= 2y\frac{y^{D-2}e^{-y^2 / 2}}{2^{D/2}\Gamma(D/2)}
+	= \frac{2^{1 - D/2} y^{D-1} e^{-y^2/2}}{\Gamma(D/2)},
+	\]
+	which is the chi distribution with $D$ degrees of freedom.
+	
+	\item See figure ~\ref{1-2}.
+	\begin{figure}
+		\centering
+		\includegraphics[width=.75\textwidth]{1-2}
+		\caption{$\chi$ PDF for various df's.}
+		\label{1-2}
+	\end{figure}
+	
+	\item See figure ~\ref{1-3}.
+	\begin{figure}
+		\centering
+		\includegraphics[width=.75\textwidth]{1-3}
+		\caption{$\chi$ CDF for 100 degrees of freedom.}
+		\label{1-3}
+	\end{figure}
+	
+	\item From examining the CDF, we see that 90\% of the mass lies between $r=9$ and $r=12$, and 80\% between $r=9$ and $r=11$.
+\end{enumerate}
+\newpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%% PROBLEM 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{problems_EXP.tex}
+\newpage
+\begin{enumerate}[label=(\alph*)]
+	\item Let $g(y) = \ident(y \neq 0)$ be the binary indicator of the response $y$ being non-zero, and let $h(y, x)$ be the PDF of the truncated-at-zero distribution, where
+	\[
+	h(y, x) = \frac{f(y\ |\ \mathbf{x})}{1 - f(0\ | \ \mathbf{x})}
+	\]
+	Then, the log-likelihood of one example is:
+	\begin{align*}
+	\log p(y_i\given x_i, \bw_1) 
+	&= \log \left[ 
+	(1 - \pi_i)^{1-g(y_i)} \left(\pi_i h(y_i, x_i)\right)^{g(y_i)}
+	\right] \\
+	&= (1-g(y_i)) \log (1 - \pi_i) + g(y_i) \left(\log\pi_i + \log h(y_i, x_i)\right) \\
+	&= 
+	\bigg[
+	(1-g(y_i)) \log (1 - \pi_i) + g(y_i) \log\pi_i
+	\bigg] + 
+	g(y_i) \log h(y_i, x_i)
+	\end{align*}
+	We have the following total log-likelihood:
+	\begin{align*}
+	\log p(\mathcal{D}\given\theta)
+	&= \sum_{i=1}^N \log p(y_i\given x_i, \bw_1) \\
+	&= \left[ \sum_{i=1}^N 
+	(1-g(y_i)) \log (1 - \pi_i) + g(y_i) \log\pi_i
+	\right] + \left[ \sum_{i=1}^N
+	g(y_i) \log h(y_i, x_i)
+	\right] \\
+	&= \left[ \sum_{i=1}^N 
+	(1-g(y_i)) \log (1 - \sigma(\mathbf{x}_i^\top \mathbf{w}_1)) + g(y_i) \log (\sigma(\mathbf{x}_i^\top \mathbf{w}_1))
+	\right] + \left[ \sum_{i=1}^N
+	g(y_i) (\log f(y_i\ |\ \mathbf{x}_i) + const)
+	\right] \\
+	&= \ell_1(\bw_1\given\mathcal{D}) + \ell_2(f\given\mathcal{D})
+	\end{align*}
+	We see that the log-likelihood breaks into two terms, and thus the parameters for $\pi$ and $f$ can be optimized separately. The first term is simply the log-likelihood for a logistic regression model, and we can use second-order optimization methods like IRLS to find $\bw_1$. Similarly, we can calculate the Hessian of $\log f(y_i\ |\ \mathbf{x}_i)$ and estimate the MLE parameters of $f$ using second-order methods.
+	
+	\item We have $f(y\ |\ \mathbf{x}) = Po(y\given\lambda)$. Rewriting the pdf for the truncated Poisson, we have
+	\begin{align*}
+	g(y) &= \frac{f(y\ |\ \mathbf{x})}{1 - f(0\ | \ \mathbf{x})} \\
+	&= \frac{\lambda^y}{y! (e^{\lambda} - 1)} \\
+	&= \frac{1}{y!} \exp\{
+	y\log\lambda - \log(e^{\lambda} - 1)
+	\} \\
+	&= h(y)\exp\{\theta \phi(y) - A(\theta)\},
+	\end{align*}
+	where $h(y) = \frac{1}{y!}$, $\theta = \log\lambda$, $\phi(y) = y$, and $A(\theta) = \log(e^{e^\theta} - 1)$.
+	
+	\item Using the results derived in Murphy 9.2.3, we use the log partition function of the truncated Poisson to derive the first and second cumulants of the sufficient statistics (in this case, the variable itself):
+	\begin{align*}
+	\E(y) &= \E(\phi(y)) = \frac{dA}{d\theta} 
+	= \frac{e^{e^\theta} e^\theta}{e^{e^\theta} - 1} = \frac{\lambda e^{\lambda}}{e^{\lambda} - 1}
+	\\
+	\var(y) &= \var(\phi(y)) = \frac{d^2A}{d\theta^2} \\
+	&= \left(\frac{d}{d\lambda} \frac{\lambda e^{\lambda}}{e^{\lambda} - 1}\right) \frac{d\lambda}{d\theta} \\
+	&= \left(
+	-\frac{\lambda e^{2\lambda}}{(e^{\lambda} - 1)^2}
+	+ \frac{\lambda e^{\lambda} + e^{\lambda}}{e^{\lambda} - 1}
+	\right) \lambda \\
+	&=
+	\frac{\lambda^2 + \lambda}{1 - e^{-\lambda}}
+	- \frac{\lambda^2}{(1 - e^{-\lambda})^2}
+	\end{align*}
+	The log-likelihood of $n$ samples $\mathcal{D} = \{y_i\}_{i=1}^n$ is
+	\begin{align*}
+	\log p(\mathcal{D}\given\theta) 
+	&= \log\left(
+	\left[\prod_{i=1}^{n} h(y_i)\right]
+	\exp\{\theta\sum_{i=1}^n\phi(y_i) - nA(\theta)\} 
+	\right) \\
+	&= \sum_{i=1}^{n} \log h(y_i)
+	+ \theta\sum_{i=1}^n\phi(y_i) 
+	- nA(\theta) \\
+	&= \theta\sum_{i=1}^n\phi(y_i) - nA(\theta) + const
+	\end{align*}
+	Taking the derivative w.r.t. $\theta$, we obtain 
+	\begin{align*}
+	\frac{d}{d\theta} \log p(\mathcal{D}\given\theta) 
+	= \sum_{i=1}^n\phi(y_i) - nA'(\theta)
+	= \sum_{i=1}^n\phi(y_i) - n\E(\phi(y))
+	\end{align*}
+	Thus, at the MLE estimate $\hat{\theta}$, 
+	\[
+	\E(\phi(y)) = \frac{1}{n} \sum_{i=1}^n\phi(y_i)
+	\]
+	Substituting in the problem's specifications, we have the following relation for the MLE estimate for $\hat{\lambda}$:
+	\begin{align*}
+	\frac{\hat{\lambda} e^{\hat{\lambda}}}{e^{\hat{\lambda}} - 1}
+	= \frac{1}{n} \sum_{i=1}^n y_i
+	\end{align*}
+	
+	\item Let $\tilde{y} = \ident(y \neq 0)$. We write the pdf of the hurdle model as
+	\begin{align*}
+	f(y) 
+	&= (1 - \pi)^{1-\tilde{y}} \left(\pi \frac{\lambda^y}{y! (e^{\lambda} - 1)}\right)^{\tilde{y}} \\
+	&= \frac{1}{y!} \exp\bigg\{
+	y\log\lambda + \tilde{y} \log\frac{\pi}{(1 - \pi)(e^{\lambda} - 1)}
+	+ \log (1 - \pi) \bigg\} \\
+	&= h(y) \exp\{\bm{\theta}^\trans\bm{\phi}(y) - A(\bm{\theta})\},
+	\end{align*}
+	where
+	\begin{align*}
+	\bm{\theta} &= \left[\log\lambda, \ \log\frac{\pi}{(1 - \pi)(e^{\lambda} - 1)}\right] \\
+	\bm{\phi}(y) &= \big[y, \ \ident(y\neq 0)\big] \\
+	A(\bm{\theta}) &= \log(1 - \pi)
+	\end{align*}
+	
+	Using the general results derived earlier in (c), the log-likelihood for the hurdle model is:
+	\begin{align*}
+	\log p(\mathcal{D}\given\bm{\theta}) &= \bm{\theta}^\trans\sum_{i=1}^n\bm{\phi}(y_i) - nA(\bm{\theta}) + const \\
+	&= 
+	\log\lambda \left[\sum_{i=1}^n y_i\right]
+	+ \log\frac{\pi}{(1 - \pi)(e^{\lambda} - 1)} \left[\sum_{i=1}^n \ident(y_i \neq 0)\right]
+	- n\log(1 - \pi) + const,
+	\end{align*}
+	and the sufficient statistics are $n$ and
+	\[
+	\bm{\phi}(\mathcal{D}) = \left[
+	\sum_{i=1}^n y_i, \
+	\sum_{i=1}^n \ident(y_i \neq 0)
+	\right]
+	\]
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%% PROBLEM 3  %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{problems_GM.tex}
+\begin{enumerate}[label=(\alph*)]
+	\item We choose the factorization
+	\[
+	p(y, x_{1:4}) = 
+	p(x_1) 
+	p(x_2\given x_1) 
+	p(x_3\given x_{1:2}) 
+	p(x_4\given x_{1:3}) 
+	p(y\given x_{1:4}),
+	\]
+	where the MATLAB-like notation $x_{1:V}$ denotes $x_1,\dots,x_V$. The DGM is shown below.
+	\begin{center}
+		\begin{tikzpicture}
+		\node[latent] (x1) {$\mathbf{x}_1$};
+		\node[latent, right=of x1] (x2) {$\mathbf{x}_2$};
+		\node[latent, right=of x2] (x3) {$\mathbf{x}_3$};
+		\node[latent, right=of x3] (x4) {$\mathbf{x}_4$};
+		\node[latent, right=of x4] (y)  {$y$};
+		
+		\edge {x1} {x2} ;
+		
+		\edge [bend left] {x1} {x3} ;
+		\edge {x2} {x3} ;
+		
+		\edge [bend left] {x1} {x4} ;
+		\edge [bend left] {x2} {x4} ;
+		\edge {x3} {x4} ;
+		
+		\edge [bend right] {x1} {y} ;
+		\edge [bend right] {x2} {y} ;
+		\edge [bend right] {x3} {y} ;
+		\edge {x4} {y} ;	
+		\end{tikzpicture}
+	\end{center}
+
+	\item The sum of the sizes of the CPT's for the DGM factored as in (a) with $V$ binary variables $x_i$ is
+	\[
+	C2^V + \sum_{i=1}^V 2^i = C2^V + 2^{V+1} - 1
+	\]
+	Thus, for $V=4$, we have a total CPT size of $16C + 31$. Note that all possible factorizations of the joint result in CPT's with size $O(C2^V)$, since the only difference in the factorizations is at what point $y$ is added to the chain rule. 
+	
+	\item The size of the CPT's for this factorization is
+	\[
+	C + \sum_{i=1}^V 2C = C(1 + 2V)
+	\]
+	The DGM is shown below.
+	\begin{center}
+		\begin{tikzpicture}
+		\node[latent] (y)  {$y$};
+		\node[latent, below left=1.5cm of y] (x2) {$\mathbf{x}_2$};
+		\node[latent, left=of x2] (x1) {$\mathbf{x}_1$};
+		\node[latent, below right=1.5cm of y] (x3) {$\mathbf{x}_3$};
+		\node[latent, right=of x3] (x4) {$\mathbf{x}_4$};
+
+		\edge {y} {x1,x2,x3,x4} ;	
+		\end{tikzpicture}
+	\end{center}
+	
+	\item The DGM is shown below.
+	\begin{center}
+		\begin{tikzpicture}
+		\node[latent] (pi) 				{$\bm{\pi}$} ;
+		\node[latent, left=of pi] (a) 	{$\bm{\alpha}$} ;
+		\node[latent, below=of pi] (y) 	{$y_i$} ;
+		
+		\node[latent, below left=of y]  (x1)	{$x_{i1}$} ;
+		\node[latent, below right=of y] (xV)	{$x_{iV}$} ;
+		
+		\node[latent, below=of x1] (p1) 	{$\theta_{c1}$} ;
+		\node[latent, below=of xV] (pV) 	{$\theta_{cV}$} ;
+		
+		\node[latent, below left=0.3cm of p1] (b1l) 	{$\alpha_{c1}$} ;
+		\node[latent, below right=0.3cm of p1] (b1r) 	{$\beta_{c1}$} ;
+		
+		\node[latent, below left=0.3cm of pV] (bVl) 	{$\alpha_{cV}$} ;
+		\node[latent, below right=0.3cm of pV] (bVr) 	{$\beta_{cV}$} ;
+		
+		\node[below=of y] (dots1) {$\dots$} ;
+		\node[below=of dots1] (dots2) {$\dots$} ;
+
+		\edge {a} 	{pi} ;
+		\edge {pi} 	{y} ;
+		\edge {y} 	{x1, xV} ;
+		\edge {p1} 	{x1} ;
+		\edge {pV} 	{xV} ;
+		\edge {b1l, b1r} 	{p1} ;
+		\edge {bVl, bVr} 	{pV} ;
+		
+		\plate {} {(y)(x1)(xV)} {$N$} ;
+		\plate {} {(p1)(pV)(b1l)(b1r)(bVl)(bVr)} {$C$} ;
+		\end{tikzpicture}
+	\end{center}
+	
+	\item 
+	\begin{itemize}
+		\item False. For a given example, features $x_1$ and $x_2$ are conditionally independent, given the class $y$. If $y$ is in the evidence, then features $x_1$ and $x_2$ are d-separated. 
+		\item False. The class labels $y$ are not always conditionally independent of the class-conditional parameters. E.g., given the class distribution parameter $\bm{\pi}$, the node $y_i$ and the node $\theta_{c1}$ are not d-separated.
+		\item True. Upon observing the class distribution parameters, the class labels are conditionally independent. Each $y_i$ is d-separated by $\bm{\pi}$, which blocks all paths between nodes.
+		\item False. Upon observing the class distribution parameters, the features are not d-separated, since $y_i$ is not a blocking node.
+		\item False. Upon observing the class distribution hyper-parameters, the class labels are not d-separated by any evidence nodes, since $\bm{\pi}$ is unobserved.
+	\end{itemize}
+
+	\item The bag-of-words model is simple and memory-efficient way to represent a text as a histogram over words. However, this representation throws away the syntax and ordering of the words, e.g. so that the phrases ``toy poodle'' and ``poodle toy'' are equivalent. An alternative way to model the distribution is to use the tf-idf statistic instead of the raw count of word $i$. The tf-idf statistic grows proportionally with the count of the word in the document, but scales inversely with the fraction of the documents that contain the word, so that words that are common across the corpus are assigned low values, while terms ``unique'' to a document are given greater weight.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%% PROBLEM 4 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{problems_NB.tex}
+
+See jupyter notebook for code. For $\bm{\alpha} = 1$, $\bm{\beta} = 1$ we obtain a test accuracy of 86.2\%. Here, we have perfectly balanced class counts, so all uniform values for $\bm{\alpha}$ will yield the same results. Thus, we only vary $\bm{\beta}$ in our tests. The validation accuracies for various values are shown in the table below; we can see that larger pseudo-counts result in higher testing accuracy, but that the difference is fairly small. 
+
+\begin{center}
+\begin{tabular}{c|c|c|c}
+	$\beta$ & 0.1 & 0.5 & 1 \\ \hline
+	acc	(binary feats.)	& 84.2 & 85.6 & 86.1 \\
+	acc	(categorical feats.) & 84.4 & 85.9 & 86.2
+\end{tabular}
+\end{center}
+
+When the classes in a dataset are imbalanced, the weights will be lower for the class with less training data, and classification will thus be incorrectly biased towards one class over the other. Using a non-uniform prior $\bm{\alpha}$ can substantially improve classification performance.
+
+\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%% PROBLEM 5 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{problems_LR.tex}
+\begin{enumerate}[label=(\alph*)]
+	\item 
+	\begin{enumerate}[label=(\roman*)]
+		\item The objective function for MAP is:
+		\begin{align*}
+		f(\bw)
+		&= \log p(\mathcal{D}\given\bw) + \log p(\bw) \\
+		&= \left[\sum_{i=1}^N
+		y_i\log(\sigma(\bw^\trans\bx_i)) + (1 - y_i)\log(1 - \sigma(\bw^\trans\bx_i))
+		\right] - \frac{\|\mathbf{w}\|_1}{b} - \log(2b)
+		\end{align*}
+		Note that the derivative of the sigmoid function is
+		\[
+		\frac{d\sigma(a)}{da} 
+		= \frac{e^{-a}}{1 + e^{-a}}\frac{1}{1 + e^{-a}} 
+		= \sigma(a)(1 - \sigma(a))
+		\]
+		Then, taking gradients of the objective w.r.t. $\bw$ yields
+		\begin{align*}
+		\frac{df(\bw)}{\bw} &= \left[\sum_{i=1}^N
+		y_i\frac{\sigma(\bw^\trans\bx_i)(1 - \sigma(\bw^\trans\bx_i))}{\sigma(\bw^\trans\bx_i)} \bx_i 
+		- (1 - y_i)\frac{\sigma(\bw^\trans\bx_i)(1 - \sigma(\bw^\trans\bx_i))}{1 - \sigma(\bw^\trans\bx_i)}\bx_i
+		\right] - \frac{\text{sgn}(\bw)}{b} \\
+		&= \left[\sum_{i=1}^N
+		y_i(1 - \mu_i) \bx_i 
+		- (1 - y_i)\mu_i\bx_i
+		\right] - \frac{\text{sgn}(\bw)}{b} \\
+		&= \left[\sum_{i=1}^N
+		(y_i - \mu_i) \bx_i 
+		\right] - \frac{\text{sgn}(\bw)}{b} \\
+		&= \bm{X}^\trans (\bm{y} - \bm{\mu}) - \frac{\text{sgn}(\bw)}{b}
+		\end{align*}
+		Thus, the MAP gradient update for a learning rate $\eta$ is
+		\[
+		\bw^{(k+1)} \gets \bw^{(k)} + \eta \left(\bm{X}^\trans (\bm{y} - \bm{\mu}^{(k)}) - \frac{\text{sgn}(\bw^{(k)})}{b}\right)
+		\]
+		
+		\item In part (a), we showed that MAP finds the weights $\bw$ that maximize the quantity
+		\[
+		f(\bw) 
+		= \left[\sum_{i=1}^N
+		\log p(y_i\given \bx_i, \bw)
+		\right] - \lambda\|\mathbf{w}\|_1 + const,
+		\]
+		where $\lambda = 1/b$. Rewriting, we have
+		\begin{align*}
+		\arg\max_{\bw} f(\bw) 
+		&= \arg\min_{\bw} -f(\bw) \\
+		&= \arg\min_{\bw} - \left[\sum_{i=1}^N
+		\log p(y_i\given \bx_i, \bw)
+		\right] + \lambda\|\mathbf{w}\|_1 \\
+		&= \arg\min_{\bw} -\frac{1}{N} \left[\sum_{i=1}^N
+		\log p(y_i\given \bx_i, \bw)
+		\right] + \lambda'\|\mathbf{w}\|_1,
+		\end{align*}
+		where $\lambda' = \frac{\lambda}{N} = \frac{1}{bN}$.
+	\end{enumerate}
+
+	\item See jupyter notebook for code. Note that we generalize this to a softmax model and use the ADAM optimizer.
+	\begin{enumerate}[label=(\roman*)]
+		\item Using $\lambda = 0$, which yielded the optimal validation accuracy, we obtain a testing accuracy of 84.40\%.
+		
+		\item The 5 words for negative reviews with the heaviest and lightest weights in the final fitted model are:
+		
+		\texttt{Heaviest: 'wasted', 'waste', 'save', 'tedious', 'awful.' }
+		
+		\texttt{Lightest: 'loved', '7/10', 'superb.', 'enjoy', 'refreshing' }
+		
+		The 5 words for positive reviews with the heaviest and lightest weights in the final fitted model are:
+		
+		\texttt{Heaviest: 'enjoy', 'excellent.', 'awesome', '10/10', 'refreshing' }
+		
+		\texttt{Lightest: 'instead.', 'costs.', 'wasted', 'waste', 'save' }
+		
+		\item The testing accuracies and weight sparsity are shown for various $\lambda$ in the table below. As expected, sparsity increases with regularization strength. However, accuracy decreases.
+		
+		\centering
+		\begin{tabular}{c|c|c}
+			$\lambda$ & acc. (\%) & sparsity (\%) \\ \hline
+			0 		& 84.40 & 0.89 \\
+			0.001 	& 80.90 & 34.32 \\
+			0.01 	& 71.80 & 39.72 \\
+			0.1 	& 52.10 & 41.02 \\
+			1 		& 50.00 & 41.20
+		\end{tabular}
+	
+	\end{enumerate}
+\end{enumerate}
+
+\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%% PROBLEM 6 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{problems_NN.tex}
+See jupyter notebook for code. After adding one hidden layer with a reLU activation function to the model in 5., we obtain an improved testing accuracy of 85.40\%. The top five negative words for the softmax activation function were \texttt{'boring', 'wasted', 'waste', 'guess', 'horrible'}, ad the top five positive words were \texttt{'great.', 'excellent', 'wonderful.', 'favorite', 'loved'}. 
+\end{document}
